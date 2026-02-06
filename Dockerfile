@@ -78,33 +78,22 @@ USER drip
 WORKDIR /var/lib/drip
 
 # Expose ports
-# 80: HTTP reverse proxy
-# 8443: Main tunnel server port (TLS)
-# 443: Alternative HTTPS port
-# 20000-40000: Dynamic TCP tunnel ports (configure with --tcp-port-min/max)
-EXPOSE 80 443 8443 20000-40000
+# 80: HTTP/WebSocket port (handles both HTTP traffic and WebSocket tunnel registration)
+EXPOSE 80
 
 # Environment variables with defaults
-ENV DRIP_PORT=8443 \
+# WebSocket mode: no TLS, designed to run behind reverse proxy (Nginx/Caddy/Cloudflare)
+ENV DRIP_PORT=80 \
     DRIP_DOMAIN=tunnel.localhost \
     DRIP_TOKEN="" \
-    DRIP_TCP_PORT_MIN=20000 \
-    DRIP_TCP_PORT_MAX=40000 \
-    DRIP_TRANSPORTS="tcp,wss" \
-    DRIP_TUNNEL_TYPES="http,https,tcp"
+    DRIP_TRANSPORTS="wss" \
+    DRIP_TUNNEL_TYPES="http,https"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD drip version --short || exit 1
 
-# Default command: start server
-# Override with environment variables or command-line flags
+# Default command: start server in WebSocket mode (no TLS)
+# Designed to run behind reverse proxy that handles TLS termination
 ENTRYPOINT ["drip"]
-CMD ["server", \
-    "--port", "${DRIP_PORT}", \
-    "--domain", "${DRIP_DOMAIN}", \
-    "--token", "${DRIP_TOKEN}", \
-    "--tcp-port-min", "${DRIP_TCP_PORT_MIN}", \
-    "--tcp-port-max", "${DRIP_TCP_PORT_MAX}", \
-    "--transports", "${DRIP_TRANSPORTS}", \
-    "--tunnel-types", "${DRIP_TUNNEL_TYPES}"]
+CMD ["server"]
