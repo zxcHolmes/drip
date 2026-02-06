@@ -3,11 +3,6 @@
 .gitignore
 .gitattributes
 
-# Documentation
-*.md
-docs/
-LICENSE
-
 # Build artifacts
 bin/
 dist/
@@ -17,52 +12,43 @@ dist/
 *.dylib
 
 # Test files
+*.test
+coverage.out
+coverage.html
 *_test.go
-**/*_test.go
-coverage.*
 
-# IDE
-.idea/
-.vscode/
+# Development
+.vscode
+.idea
 *.swp
 *.swo
 *~
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Certificates (will be generated in container)
-*.pem
-*.key
-*.crt
-*.csr
-certs/
-
-# Logs
-*.log
-logs/
-
-# Environment
-.env
-.env.local
-
-# Dependencies (will be downloaded in container)
-vendor/
+# Documentation (not needed in image)
+*.md
+docs/
+assets/
+LICENSE
 
 # CI/CD
 .github/
 .gitlab-ci.yml
 .travis.yml
 
-# Development tools
-Makefile
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Deployment
+deployments/
 scripts/
 
-# Examples
-examples/
+# Config samples
+config.yaml.example
+*.sample
+
+# Temporary files
+tmp/
+temp/
+*.log
