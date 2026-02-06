@@ -31,6 +31,7 @@ type ConnectorConfig struct {
 	LocalHost  string
 	LocalPort  int
 	Subdomain  string
+	CustomHost string // Custom domain (CNAME) for this tunnel
 	Insecure   bool
 
 	PoolSize int

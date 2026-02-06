@@ -15,6 +15,7 @@ import (
 
 type Connection struct {
 	Subdomain  string
+	CustomHost string // Custom domain (CNAME) for this tunnel
 	Conn       *websocket.Conn
 	SendCh     chan []byte
 	CloseCh    chan struct{}
@@ -212,6 +213,27 @@ func (c *Connection) ValidateProxyAuth(password string) bool {
 		return true
 	}
 	return auth.Password == password
+}
+
+// SetCustomHost sets the custom host (CNAME) for this tunnel
+func (c *Connection) SetCustomHost(host string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.CustomHost = host
+}
+
+// GetCustomHost returns the custom host (CNAME) for this tunnel
+func (c *Connection) GetCustomHost() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.CustomHost
+}
+
+// HasCustomHost returns true if this tunnel has a custom host configured
+func (c *Connection) HasCustomHost() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.CustomHost != ""
 }
 
 func (c *Connection) StartWritePump() {

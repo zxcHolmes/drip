@@ -165,16 +165,28 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	subdomain, result := h.extractSubdomain(r.Host)
+
+	var tconn *tunnel.Connection
+	var ok bool
+
 	switch result {
 	case subdomainHome:
 		h.serveHomePage(w, r)
 		return
 	case subdomainNotFound:
-		h.serveTunnelNotFound(w, r)
-		return
+		// Try to find tunnel by custom host (CNAME)
+		tconn, ok = h.manager.GetByCustomHost(r.Host)
+		if !ok {
+			h.serveTunnelNotFound(w, r)
+			return
+		}
+	case subdomainFound:
+		tconn, ok = h.manager.Get(subdomain)
 	}
 
-	tconn, ok := h.manager.Get(subdomain)
+	if !ok {
+		tconn, ok = h.manager.Get(subdomain)
+	}
 	if !ok || tconn == nil {
 		h.serveTunnelNotFound(w, r)
 		return

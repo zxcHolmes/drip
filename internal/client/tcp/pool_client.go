@@ -33,6 +33,7 @@ type PoolClient struct {
 	localHost  string
 	localPort  int
 	subdomain  string
+	customHost string // Custom domain (CNAME) for this tunnel
 
 	assignedURL string
 	tunnelID    string
@@ -161,6 +162,7 @@ func NewPoolClient(cfg *ConnectorConfig, logger *zap.Logger) *PoolClient {
 		localHost:       localHost,
 		localPort:       cfg.LocalPort,
 		subdomain:       cfg.Subdomain,
+		customHost:      cfg.CustomHost,
 		minSessions:     minSessions,
 		maxSessions:     maxSessions,
 		initialSessions: initialSessions,
@@ -199,6 +201,7 @@ func (c *PoolClient) Connect() error {
 	req := protocol.RegisterRequest{
 		Token:           c.token,
 		CustomSubdomain: c.subdomain,
+		CustomHost:      c.customHost,
 		TunnelType:      c.tunnelType,
 		LocalPort:       c.localPort,
 		ConnectionType:  "primary",

@@ -22,6 +22,7 @@ type ProxyAuth struct {
 type RegisterRequest struct {
 	Token            string            `json:"token"`
 	CustomSubdomain  string            `json:"custom_subdomain"`
+	CustomHost       string            `json:"custom_host,omitempty"`     // Custom domain (CNAME) for this tunnel
 	TunnelType       TunnelType        `json:"tunnel_type"`
 	LocalPort        int               `json:"local_port"`
 	ConnectionType   string            `json:"connection_type,omitempty"`

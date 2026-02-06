@@ -46,6 +46,7 @@ func NewRegistrationHandler(
 type RegistrationRequest struct {
 	TunnelType       protocol.TunnelType
 	CustomSubdomain  string
+	CustomHost       string // Custom domain (CNAME) for this tunnel
 	Token            string
 	ConnectionType   string
 	PoolCapabilities *protocol.PoolCapabilities
@@ -127,9 +128,33 @@ func (rh *RegistrationHandler) Register(req *RegistrationRequest) (*Registration
 		)
 	}
 
+	// Set custom host if provided
+	if req.CustomHost != "" {
+		tunnelConn.SetCustomHost(req.CustomHost)
+		rh.logger.Info("Custom host configured",
+			zap.String("subdomain", subdomain),
+			zap.String("custom_host", req.CustomHost),
+		)
+	}
+
 	// Build tunnel URL
 	urlBuilder := utils.NewTunnelURLBuilder(rh.tunnelDomain, rh.publicPort)
 	tunnelURL := urlBuilder.BuildURL(subdomain, req.TunnelType, port)
+
+	// Override with custom host URL if provided
+	if req.CustomHost != "" {
+		scheme := "https"
+		if req.TunnelType == protocol.TunnelTypeTCP {
+			tunnelURL = fmt.Sprintf("tcp://%s:%d", req.CustomHost, port)
+		} else {
+			port := rh.publicPort
+			if port == 0 || port == 443 {
+				tunnelURL = fmt.Sprintf("%s://%s", scheme, req.CustomHost)
+			} else {
+				tunnelURL = fmt.Sprintf("%s://%s:%d", scheme, req.CustomHost, port)
+			}
+		}
+	}
 
 	// Handle connection groups for multi-connection support
 	var tunnelID string

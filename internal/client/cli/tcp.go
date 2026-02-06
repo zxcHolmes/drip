@@ -20,6 +20,7 @@ Example:
   drip tcp 3306                     Tunnel MySQL
   drip tcp 22                       Tunnel SSH
   drip tcp 6379 --subdomain myredis Tunnel Redis with custom subdomain
+  drip tcp 3306 --custom-host db.example.com  Use custom domain (CNAME)
   drip tcp 5432 --allow-ip 192.168.0.0/16  Only allow IPs from 192.168.x.x
   drip tcp 22 --allow-ip 10.0.0.1          Allow single IP
   drip tcp 22 --deny-ip 1.2.3.4            Block specific IP
@@ -49,6 +50,7 @@ Note: TCP tunnels require dynamic port allocation on the server.
 
 func init() {
 	tcpCmd.Flags().StringVarP(&subdomain, "subdomain", "n", "", "Custom subdomain (optional)")
+	tcpCmd.Flags().StringVar(&customHost, "custom-host", "", "Custom domain (CNAME) for this tunnel (e.g., db.example.com)")
 	tcpCmd.Flags().BoolVarP(&daemonMode, "daemon", "d", false, "Run in background (daemon mode)")
 	tcpCmd.Flags().StringVarP(&localAddress, "address", "a", "127.0.0.1", "Local address to forward to (default: 127.0.0.1)")
 	tcpCmd.Flags().StringSliceVar(&allowIPs, "allow-ip", nil, "Allow only these IPs or CIDR ranges (e.g., 192.168.1.1,10.0.0.0/8)")
@@ -81,6 +83,7 @@ func runTCP(_ *cobra.Command, args []string) error {
 		LocalHost:  localAddress,
 		LocalPort:  port,
 		Subdomain:  subdomain,
+		CustomHost: customHost,
 		Insecure:   insecure,
 		AllowIPs:   allowIPs,
 		DenyIPs:    denyIPs,

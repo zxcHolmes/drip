@@ -18,6 +18,7 @@ var httpsCmd = &cobra.Command{
 Example:
   drip https 443                    Tunnel localhost:443
   drip https 8443 --subdomain myapp Use custom subdomain
+  drip https 443 --custom-host www.example.com  Use custom domain (CNAME)
   drip https 443 --allow-ip 192.168.0.0/16  Only allow IPs from 192.168.x.x
   drip https 443 --allow-ip 10.0.0.1        Allow single IP
   drip https 443 --deny-ip 1.2.3.4          Block specific IP
@@ -41,6 +42,7 @@ Transport options:
 
 func init() {
 	httpsCmd.Flags().StringVarP(&subdomain, "subdomain", "n", "", "Custom subdomain (optional)")
+	httpsCmd.Flags().StringVar(&customHost, "custom-host", "", "Custom domain (CNAME) for this tunnel (e.g., www.example.com)")
 	httpsCmd.Flags().BoolVarP(&daemonMode, "daemon", "d", false, "Run in background (daemon mode)")
 	httpsCmd.Flags().StringVarP(&localAddress, "address", "a", "127.0.0.1", "Local address to forward to (default: 127.0.0.1)")
 	httpsCmd.Flags().StringSliceVar(&allowIPs, "allow-ip", nil, "Allow only these IPs or CIDR ranges (e.g., 192.168.1.1,10.0.0.0/8)")
@@ -79,6 +81,7 @@ func runHTTPS(_ *cobra.Command, args []string) error {
 		LocalHost:  localAddress,
 		LocalPort:  port,
 		Subdomain:  subdomain,
+		CustomHost: customHost,
 		Insecure:   insecure,
 		AllowIPs:   allowIPs,
 		DenyIPs:    denyIPs,

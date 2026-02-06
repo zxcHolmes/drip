@@ -3,6 +3,7 @@ package tunnel
 import (
 	"errors"
 	"hash/fnv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -323,6 +324,34 @@ func (m *Manager) Get(subdomain string) (*Connection, bool) {
 	tc, ok := s.tunnels[subdomain]
 	s.mu.RUnlock()
 	return tc, ok
+}
+
+// GetByCustomHost retrieves a tunnel connection by custom host (CNAME)
+// This is slower than Get() as it requires scanning all shards
+func (m *Manager) GetByCustomHost(host string) (*Connection, bool) {
+	if host == "" {
+		return nil, false
+	}
+
+	// Normalize host (remove port if present)
+	if idx := strings.Index(host, ":"); idx != -1 {
+		host = host[:idx]
+	}
+
+	// Search all shards for matching custom host
+	for i := 0; i < numShards; i++ {
+		s := &m.shards[i]
+		s.mu.RLock()
+		for _, tc := range s.tunnels {
+			if tc.GetCustomHost() == host {
+				s.mu.RUnlock()
+				return tc, true
+			}
+		}
+		s.mu.RUnlock()
+	}
+
+	return nil, false
 }
 
 // List returns all active tunnel connections

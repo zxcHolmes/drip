@@ -188,6 +188,7 @@ func (c *Connection) Handle() error {
 	regReq := &RegistrationRequest{
 		TunnelType:       req.TunnelType,
 		CustomSubdomain:  req.CustomSubdomain,
+		CustomHost:       req.CustomHost,
 		Token:            req.Token,
 		ConnectionType:   req.ConnectionType,
 		PoolCapabilities: req.PoolCapabilities,

@@ -9,6 +9,119 @@ Drip 是一个高性能的自托管内网穿透解决方案，使用 Go 语言�
 - **许可证**: BSD 3-Clause
 - **语言**: Go 1.21+
 
+## 新增功能 (Fork 特性)
+
+### 1. 强制传输协议配置
+通过 `--transport` 参数可以强制客户端使用指定的传输协议，不再依赖自动探测。
+
+```bash
+# 强制使用 WebSocket over TLS (CDN 模式)
+drip http 3000 --transport wss
+
+# 强制使用 TLS 1.3 直连
+drip http 3000 --transport tcp
+
+# 自动选择 (默认)
+drip http 3000 --transport auto
+```
+
+**使用场景**:
+- 服务器部署在 Cloudflare 等 CDN 后面，强制使用 `wss`
+- 服务器直接暴露端口，追求最佳性能，强制使用 `tcp`
+- 网络环境不确定，使用 `auto` 让客户端自动探测
+
+### 2. 自定义域名 (CNAME) 支持
+
+允许客户端注册一个自定义域名（CNAME）而不是子域名，适合已有域名想要使用 Drip 进行内网穿透的场景。
+
+#### 工作原理
+
+```
+传统方式 (子域名):
+  - 客户端注册: myapp
+  - 访问 URL: https://myapp.tunnel.example.com
+
+CNAME 方式 (自定义域名):
+  - 客户端注册: www.cc.com (CNAME 到 tunnel.example.com)
+  - 访问 URL: https://www.cc.com
+```
+
+#### 使用步骤
+
+**1. DNS 配置**
+```
+# 在你的域名 DNS 设置中添加 CNAME 记录
+www.cc.com  CNAME  tunnel.example.com
+```
+
+**2. 启动客户端**
+```bash
+# HTTP 隧道
+drip http 3000 --custom-host www.cc.com
+
+# HTTPS 隧道
+drip https 443 --custom-host www.cc.com
+
+# TCP 隧道
+drip tcp 5432 --custom-host db.cc.com
+```
+
+**3. 访问你的服务**
+```bash
+# 用户直接访问你的自定义域名
+curl https://www.cc.com
+```
+
+#### 服务器端路由逻辑
+
+服务器使用双层路由机制：
+
+```go
+// 1. 首先尝试标准子域名匹配
+subdomain := extractSubdomain(r.Host)  // www.cc.com → 不匹配
+
+// 2. 子域名不匹配时，尝试自定义域名匹配
+if subdomain == "" {
+    tunnel := manager.GetByCustomHost(r.Host)  // 查找注册了 www.cc.com 的隧道
+}
+```
+
+**性能考虑**:
+- 子域名查找: O(1) - 使用 FNV 哈希分片
+- 自定义域名查找: O(N) - 需要遍历所有隧道（已分片优化）
+- 建议：高频访问的服务使用子域名，低频或特定域名使用 CNAME
+
+#### 实现位置
+
+- **隧道连接**: `internal/server/tunnel/connection.go` - `CustomHost` 字段
+- **路由逻辑**: `internal/server/proxy/handler.go:167-187`
+- **自定义域名查找**: `internal/server/tunnel/manager.go:328-352` - `GetByCustomHost()`
+- **协议消息**: `internal/shared/protocol/messages.go` - `RegisterRequest.CustomHost`
+- **客户端 CLI**: `internal/client/cli/http.go`, `https.go`, `tcp.go` - `--custom-host` 标志
+
+#### 使用示例
+
+**案例 1: 个人博客**
+```bash
+# DNS: blog.yourdomain.com CNAME tunnel.example.com
+drip http 3000 --custom-host blog.yourdomain.com
+# 用户访问: https://blog.yourdomain.com
+```
+
+**案例 2: API 服务**
+```bash
+# DNS: api.company.com CNAME tunnel.example.com
+drip http 8080 --custom-host api.company.com
+# 用户访问: https://api.company.com/v1/users
+```
+
+**案例 3: 数据库外部访问**
+```bash
+# DNS: db.company.com CNAME tunnel.example.com
+drip tcp 5432 --custom-host db.company.com
+# 连接: psql -h db.company.com -p 20001
+```
+
 ## 核心架构
 
 ### 1. 统一二进制设计
